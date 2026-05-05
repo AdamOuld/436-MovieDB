@@ -1,16 +1,19 @@
-import { supabase } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import ReviewForm from '@/components/ReviewForm'
 import ReviewList from '@/components/ReviewList'
 import FavoriteButton from '@/components/FavoriteButton'
+import SeasonsAccordion from '@/components/SeasonsAccordion'
 
 export default async function TitlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const titleId = Number(id)
 
-  const [{ data: title, error }, { data: credits }, { data: titleGenres }, { data: ratings }, { data: reviews }] =
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [{ data: title, error }, { data: credits }, { data: titleGenres }, { data: ratings }, { data: reviews }, { data: seasons }] =
     await Promise.all([
       supabase.from('titles').select('*').eq('id', titleId).single(),
       supabase
@@ -29,16 +32,18 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
         .eq('title_id', titleId)
         .order('created_at', { ascending: false })
         .limit(5),
+      supabase
+        .from('seasons')
+        .select('id, season_number, name, overview, air_date, episodes(id, episode_number, name, overview, air_date, runtime_min)')
+        .eq('title_id', titleId)
+        .order('season_number'),
     ])
 
   if (error || !title) notFound()
 
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-
   let existingReview: { rating: number; review_text: string | null } | null = null
   if (user) {
-    const { data } = await authClient
+    const { data } = await supabase
       .from('reviews')
       .select('rating, review_text')
       .eq('title_id', titleId)
@@ -49,7 +54,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
 
   let isFavorited = false
   if (user) {
-    const { data } = await authClient
+    const { data } = await supabase
       .from('favorites')
       .select('title_id')
       .eq('title_id', titleId)
@@ -161,8 +166,11 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                 <h2 className="text-sm font-semibold text-purple-400 mb-1">
                   {directors.length === 1 ? 'Director' : 'Directors'}
                 </h2>
-                <p className="text-gray-300 text-sm">
-                  {directors.map((d) => (Array.isArray(d.people) ? d.people[0]?.name : d.people?.name)).join(', ')}
+                <p className="text-gray-300 text-sm flex flex-wrap gap-x-2">
+                  {directors.map((d, i) => {
+                    const p = Array.isArray(d.people) ? d.people[0] : d.people
+                    return p ? <Link key={i} href={`/people/${p.id}`} className="hover:text-purple-300 transition-colors">{p.name}</Link> : null
+                  })}
                 </p>
               </div>
             )}
@@ -171,10 +179,33 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                 <h2 className="text-sm font-semibold text-purple-400 mb-1">
                   {writers.length === 1 ? 'Writer' : 'Writers'}
                 </h2>
-                <p className="text-gray-300 text-sm">
-                  {writers.map((w) => (Array.isArray(w.people) ? w.people[0]?.name : w.people?.name)).join(', ')}
+                <p className="text-gray-300 text-sm flex flex-wrap gap-x-2">
+                  {writers.map((w, i) => {
+                    const p = Array.isArray(w.people) ? w.people[0] : w.people
+                    return p ? <Link key={i} href={`/people/${p.id}`} className="hover:text-purple-300 transition-colors">{p.name}</Link> : null
+                  })}
                 </p>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Seasons (TV only) */}
+        {title.kind === 'tv' && (
+          <div className="mt-10">
+            <h2 className="text-lg font-semibold text-purple-400 mb-4">
+              Seasons
+              {seasons && seasons.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-purple-600">({seasons.length})</span>
+              )}
+            </h2>
+            {seasons && seasons.length > 0 ? (
+              <SeasonsAccordion seasons={seasons.map((s) => ({
+                ...s,
+                episodes: Array.isArray(s.episodes) ? s.episodes : [],
+              }))} />
+            ) : (
+              <p className="text-sm text-purple-700">No seasons added yet.</p>
             )}
           </div>
         )}
@@ -215,8 +246,8 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                 const person = Array.isArray(credit.people) ? credit.people[0] : credit.people
                 if (!person) return null
                 return (
-                  <div key={i} className="text-center">
-                    <div className="w-full aspect-square rounded-full overflow-hidden bg-purple-900/30 border border-purple-900/50 mx-auto mb-2">
+                  <Link key={i} href={`/people/${person.id}`} className="text-center group">
+                    <div className="w-full aspect-square rounded-full overflow-hidden bg-purple-900/30 border border-purple-900/50 mx-auto mb-2 group-hover:border-purple-500 transition-colors">
                       {person.photo_url ? (
                         <img
                           src={person.photo_url}
@@ -229,13 +260,13 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                         </div>
                       )}
                     </div>
-                    <p className="text-xs font-medium leading-tight">{person.name}</p>
+                    <p className="text-xs font-medium leading-tight group-hover:text-purple-300 transition-colors">{person.name}</p>
                     {credit.character_name && (
                       <p className="text-xs text-purple-500 mt-0.5 leading-tight line-clamp-2">
                         {credit.character_name}
                       </p>
                     )}
-                  </div>
+                  </Link>
                 )
               })}
             </div>

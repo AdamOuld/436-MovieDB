@@ -7,13 +7,15 @@ export default async function Navbar() {
   const { data: { user } } = await supabase.auth.getUser()
 
   let displayName: string | null = null
+  let isAdmin = false
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('username, display_name')
+      .select('username, display_name, is_admin')
       .eq('id', user.id)
       .single()
     displayName = profile?.display_name ?? profile?.username ?? user.email ?? null
+    isAdmin = profile?.is_admin ?? false
   }
 
   return (
@@ -35,6 +37,11 @@ export default async function Navbar() {
               <Link href="/sql" className="text-sm text-purple-500 hover:text-purple-300 transition-colors hidden sm:block">
                 SQL
               </Link>
+              {isAdmin && (
+                <Link href="/admin" className="text-sm text-purple-500 hover:text-purple-300 transition-colors hidden sm:block">
+                  Admin
+                </Link>
+              )}
 
               <div className="flex items-center gap-3 pl-4 border-l border-purple-900">
                 <span className="text-sm text-purple-500 max-w-32 truncate hidden sm:block">{displayName}</span>
