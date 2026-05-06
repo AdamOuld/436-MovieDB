@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { submitReview } from '@/app/titles/[id]/actions'
 
 interface Props {
@@ -9,10 +10,19 @@ interface Props {
 }
 
 export default function ReviewForm({ titleId, existing }: Props) {
+  const router = useRouter()
   const action = submitReview.bind(null, titleId)
   const [state, formAction, pending] = useActionState(action, null)
   const [hovered, setHovered] = useState(0)
   const [selected, setSelected] = useState(existing?.rating ?? 0)
+  const prevPending = useRef(false)
+
+  useEffect(() => {
+    if (prevPending.current && !pending && !state) {
+      router.refresh()
+    }
+    prevPending.current = pending
+  }, [pending, state, router])
 
   const displayed = hovered || selected
 

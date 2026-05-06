@@ -18,7 +18,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
       supabase.from('titles').select('*').eq('id', titleId).single(),
       supabase
         .from('credits')
-        .select('role, character_name, billing_order, people(id, name, photo_url)')
+        .select('role, character_name, billing_order, people(id, name)')
         .eq('title_id', titleId)
         .order('billing_order'),
       supabase
@@ -28,7 +28,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
       supabase.from('title_ratings').select('avg_rating, review_count').eq('title_id', titleId).single(),
       supabase
         .from('reviews')
-        .select('id, rating, review_text, created_at, profiles(username, display_name, avatar_url)')
+        .select('id, user_id, rating, review_text, created_at, profiles(username, display_name, avatar_url)')
         .eq('title_id', titleId)
         .order('created_at', { ascending: false })
         .limit(5),
@@ -226,6 +226,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
               profiles: Array.isArray(r.profiles) ? r.profiles[0] ?? null : r.profiles,
             }))}
             totalCount={Number(reviewCount)}
+            currentUserId={user?.id ?? null}
           />
 
           {user ? (
@@ -247,18 +248,8 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                 if (!person) return null
                 return (
                   <Link key={i} href={`/people/${person.id}`} className="text-center group">
-                    <div className="w-full aspect-square rounded-full overflow-hidden bg-purple-900/30 border border-purple-900/50 mx-auto mb-2 group-hover:border-purple-500 transition-colors">
-                      {person.photo_url ? (
-                        <img
-                          src={person.photo_url}
-                          alt={person.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-purple-700 text-xl font-bold">
-                          {person.name.charAt(0)}
-                        </div>
-                      )}
+                    <div className="w-full aspect-square rounded-full overflow-hidden bg-purple-900/30 border border-purple-900/50 mx-auto mb-2 group-hover:border-purple-500 transition-colors flex items-center justify-center">
+                      <span className="text-purple-400 text-xl font-bold">{person.name.charAt(0)}</span>
                     </div>
                     <p className="text-xs font-medium leading-tight group-hover:text-purple-300 transition-colors">{person.name}</p>
                     {credit.character_name && (

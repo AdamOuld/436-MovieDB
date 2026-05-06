@@ -50,14 +50,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
         {/* Header */}
         <div className="flex gap-8 items-start">
-          <div className="shrink-0 w-32 sm:w-44 rounded-xl overflow-hidden border border-purple-900/50 shadow-xl">
-            {person.photo_url ? (
-              <img src={person.photo_url} alt={person.name} className="w-full aspect-[2/3] object-cover" />
-            ) : (
-              <div className="w-full aspect-[2/3] bg-purple-900/20 flex items-center justify-center">
-                <span className="text-purple-700 text-4xl font-bold">{person.name.charAt(0)}</span>
-              </div>
-            )}
+          <div className="shrink-0 w-32 sm:w-44 rounded-xl overflow-hidden border border-purple-900/50 shadow-xl bg-purple-900/20 aspect-[2/3] flex items-center justify-center">
+            <span className="text-purple-400 text-5xl font-bold">{person.name.charAt(0)}</span>
           </div>
 
           <div className="flex-1 min-w-0 pt-2">
