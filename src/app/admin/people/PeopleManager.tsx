@@ -108,10 +108,8 @@ export default function PeopleManager({ initialPeople }: { initialPeople: Person
             {filtered.map((p) => (
               <tr key={p.id} className="border-b border-purple-900/20 hover:bg-purple-900/10 transition-colors">
                 <td className="px-4 py-3">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-900/30 border border-purple-900/50">
-                    {p.photo_url
-                      ? <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-purple-700 text-xs font-bold">{p.name.charAt(0)}</div>}
+                  <div className="w-8 h-8 rounded-full bg-purple-900/30 border border-purple-900/50 flex items-center justify-center text-purple-400 text-xs font-bold">
+                    {p.name.charAt(0)}
                   </div>
                 </td>
                 <td className="px-4 py-3 font-medium">{p.name}</td>
